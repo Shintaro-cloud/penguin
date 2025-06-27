@@ -25,7 +25,8 @@
 
     async function loadModel() {
       try {
-        model = await tf.loadLayersModel('tfjs_model/model.json');
+        model = await tf.loadLayersModel('https://shintaro-cloud.github.io/repository-name/tfjs_model/model.json
+');
         console.log('モデル読み込み完了:', model);
         document.getElementById('result').innerText = 'モデルの読み込みに成功しました。画像を選択してください。';
       } catch (e) {
