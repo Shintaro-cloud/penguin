@@ -64,7 +64,7 @@
           console.log('予測結果:', prediction);
           const dogProb = prediction[0];
           const catProb = prediction[1];
-          const resultText = dogProb > catProb ? '🐶 犬と判定されました' : '🐱 猫と判定されました';
+          const resultText = dogProb > catProb ? '犬と判定されました' : '猫と判定されました';
           document.getElementById('result').innerText = `${resultText}（犬: ${(dogProb*100).toFixed(1)}%、猫: ${(catProb*100).toFixed(1)}%）`;
         } catch (e) {
           console.error('予測処理でエラー:', e);
