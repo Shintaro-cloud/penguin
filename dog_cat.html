@@ -1,56 +1,56 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <title>犬猫判定アプリ</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.18.0/dist/tf.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 2em auto; }
-    h1 { text-align: center; }
-    #result { margin-top: 1em; font-size: 1.2em; }
-    input[type="file"] { display: block; margin: 1em auto; }
-    canvas { display: none; }
-  </style>
-</head>
-<body>
-  <h1>犬猫判定アプリ</h1>
-  <p>画像を選んでアップロードすると、犬か猫かを判定します。</p>
-  <input type="file" id="imageInput" accept="image/*" />
-  <canvas id="canvas" width="50" height="50"></canvas>
-  <p id="result">ここに判定結果が表示されます。</p>
+const IMG_SIZE = 50;
+let model;
 
-  <script>
-    const IMG_SIZE = 50;
-    let model;
+async function loadModel() {
+  try {
+    model = await tf.loadLayersModel('tfjs_model/model.json');
+    console.log('モデル読み込み完了:', model);
+  } catch (e) {
+    console.error('モデル読み込み失敗:', e);
+  }
+}
 
-    async function loadModel() {
-      model = await tf.loadLayersModel('tfjs_model/model.json');
-      console.log('モデル読み込み完了');
+function preprocessImage(image) {
+  console.log('画像を前処理中...');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(image, 0, 0, IMG_SIZE, IMG_SIZE);
+  const imageData = ctx.getImageData(0, 0, IMG_SIZE, IMG_SIZE);
+  const tensor = tf.browser.fromPixels(imageData).toFloat().div(255).expandDims(0);
+  console.log('テンソル形状:', tensor.shape);
+  return tensor;
+}
+
+document.getElementById('imageInput').addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (!file) {
+    console.log('ファイルが選択されていません');
+    return;
+  }
+  console.log('ファイル選択:', file.name);
+
+  const img = new Image();
+  img.onload = async () => {
+    console.log('画像が読み込まれました');
+    try {
+      const inputTensor = preprocessImage(img);
+      const prediction = await model.predict(inputTensor).data();
+      console.log('予測結果:', prediction);
+      const dogProb = prediction[0];
+      const catProb = prediction[1];
+      const resultText = dogProb > catProb ? '🐶 犬と判定されました' : '🐱 猫と判定されました';
+      document.getElementById('result').innerText = `${resultText}（犬: ${(dogProb*100).toFixed(1)}%、猫: ${(catProb*100).toFixed(1)}%）`;
+    } catch (e) {
+      console.error('予測処理でエラー:', e);
+      document.getElementById('result').innerText = '判定中にエラーが発生しました。';
     }
+  };
+  img.onerror = () => {
+    console.error('画像の読み込みに失敗しました。');
+    document.getElementById('result').innerText = '画像の読み込みに失敗しました。';
+  };
+  img.src = URL.createObjectURL(file);
+});
 
-    function preprocessImage(image) {
-      const canvas = document.getElementById('canvas');
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(image, 0, 0, IMG_SIZE, IMG_SIZE);
-      const imageData = ctx.getImageData(0, 0, IMG_SIZE, IMG_SIZE);
-      return tf.browser.fromPixels(imageData).toFloat().div(255).expandDims(0);
-    }
+loadModel();
 
-    document.getElementById('imageInput').addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      const img = new Image();
-      img.onload = async () => {
-        const inputTensor = preprocessImage(img);
-        const prediction = await model.predict(inputTensor).data();
-        const dogProb = prediction[0];
-        const catProb = prediction[1];
-        const resultText = dogProb > catProb ? '🐶 犬と判定されました' : '🐱 猫と判定されました';
-        document.getElementById('result').innerText = `${resultText}（犬: ${(dogProb*100).toFixed(1)}%、猫: ${(catProb*100).toFixed(1)}%）`;
-      };
-      img.src = URL.createObjectURL(file);
-    });
-
-    loadModel();
-  </script>
-</body>
-</html>
